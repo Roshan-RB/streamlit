@@ -31,18 +31,18 @@ if pdf_file is not None:
         if st.button("Crop Image"):
             cropped_image = st_cropperjs(image_bytes, btn_text="Crop Image")
 
+            # Convert cropped image to PIL Image
+            pil_image = Image.open(BytesIO(cropped_image))
+
             # Display the cropped image
-            if cropped_image is not None:
-                st.write("Cropped Image:")
-                st.image(cropped_image, use_column_width=True)
+            st.write("Cropped Image:")
+            st.image(pil_image, use_column_width=True)
 
-                # Convert PIL Image to bytes
-                img_byte_array = BytesIO()
-                cropped_image.save(img_byte_array, format="PNG")
-                img_bytes = img_byte_array.getvalue()
-
-                # Download the cropped image
-                st.download_button("Download Cropped Image", img_bytes, file_name="cropped_image.png", mime="image/png")
+            # Download the cropped image
+            img_byte_array = BytesIO()
+            pil_image.save(img_byte_array, format='PNG')
+            img_bytes = img_byte_array.getvalue()
+            st.download_button("Download Cropped Image", img_bytes, file_name="cropped_image.png", mime="image/png")
 
     # Clean up the temporary file
     os.unlink(tmp_file_path)
