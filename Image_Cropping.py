@@ -12,7 +12,7 @@ st.title("Dimension Detection!")
 if 'crop_button_clicked' not in st.session_state:
     st.session_state.crop_button_clicked = False
 
-pdf_file = st.file_uploader("Upload a PDF file", type="pdf")
+pdf_file = st.sidebar.file_uploader("Upload a PDF file", type="pdf")
 page_number = st.number_input("Enter the page number:", min_value=1, format="%d", value=1)
 
 if pdf_file is not None:
