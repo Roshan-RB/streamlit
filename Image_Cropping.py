@@ -26,7 +26,7 @@ if pdf_file is not None:
         st.image(image_bytes, use_column_width=True, caption=f"Page {page_number}")
 
         # Use cropper to select and crop a part of the image
-        cropped_image = st_cropperjs(image_bytes)
+        cropped_image = st_cropperjs(image_bytes, btn_text="Crop Image", key="crop")
 
         # Download the cropped image
         if cropped_image is not None:
