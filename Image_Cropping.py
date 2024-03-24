@@ -25,14 +25,16 @@ if pdf_file is not None:
         # Display the PDF page
         st.image(image_bytes, use_column_width=True, caption=f"Page {page_number}")
 
-        # Use cropper to select and crop a part of the image
-        cropped_image = st_cropperjs(image_bytes, btn_text="Crop Image", key="crop")
+        # Use cropper to select and crop a part of the image only if the page number changes
+        if st.button("Crop Image"):
+            cropped_image = st_cropperjs(image_bytes, btn_text="Crop Image")
 
-        # Download the cropped image
-        if cropped_image is not None:
-            st.write("Cropped Image:")
-            st.image(cropped_image, use_column_width=True)
-            st.download_button("Download Cropped Image", cropped_image, file_name="cropped_image.png", mime="image/png")
+            # Download the cropped image
+            if cropped_image is not None:
+                st.write("Cropped Image:")
+                st.image(cropped_image, use_column_width=True)
+                st.download_button("Download Cropped Image", cropped_image, file_name="cropped_image.png",
+                                   mime="image/png")
 
     # Clean up the temporary file
     os.unlink(tmp_file_path)
