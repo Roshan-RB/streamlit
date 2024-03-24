@@ -6,7 +6,7 @@ import os
 from PIL import Image
 from io import BytesIO
 
-st.title("PDF Cropper")
+st.title("Dimension Detection!")
 
 # Initialize session state
 if 'crop_button_clicked' not in st.session_state:
