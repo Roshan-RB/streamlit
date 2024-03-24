@@ -30,32 +30,29 @@ if pdf_file is not None:
         # Use cropper to select and crop a part of the image only if the page number changes
         if st.button("Crop Image"):
             cropped_image = st_cropperjs(image_bytes, btn_text="Crop Image")
-            st.write("Cropped Image:", type(cropped_image), cropped_image)
 
             try:
-                # Convert cropped image to PIL Image
-                pil_image = Image.open(BytesIO(cropped_image))
+                # Save the cropped image data to a temporary file
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_img_file:
+                    tmp_img_file.write(cropped_image)
+
+                # Open the temporary image file using PIL
+                pil_image = Image.open(tmp_img_file.name)
 
                 # Display the cropped image
                 st.write("Cropped Image:")
                 st.image(pil_image, use_column_width=True)
 
-                # Save the cropped image as a PNG file
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_img_file:
-                    pil_image.save(tmp_img_file.name)
-
-                    # Read the cropped image back as bytes
-                    with open(tmp_img_file.name, "rb") as img_file:
-                        img_bytes = img_file.read()
-
-                    # Download the cropped image
-                    st.download_button("Download Cropped Image", img_bytes, file_name="cropped_image.png", mime="image/png")
-
-                # Clean up the temporary image file
-                os.unlink(tmp_img_file.name)
+                # Provide download button for the cropped image
+                img_bytes = tmp_img_file.read()
+                st.download_button("Download Cropped Image", img_bytes, file_name="cropped_image.png", mime="image/png")
 
             except Exception as e:
                 st.error(f"Error: {e}")
+
+            finally:
+                # Clean up the temporary image file
+                os.unlink(tmp_img_file.name)
 
     # Clean up the temporary PDF file
     os.unlink(tmp_file_path)
