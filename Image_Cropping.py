@@ -8,6 +8,10 @@ from io import BytesIO
 
 st.title("PDF Cropper")
 
+# Initialize session state
+if 'crop_button_clicked' not in st.session_state:
+    st.session_state.crop_button_clicked = False
+
 pdf_file = st.file_uploader("Upload a PDF file", type="pdf")
 page_number = st.number_input("Enter the page number:", min_value=1, format="%d", value=1)
 
@@ -29,32 +33,36 @@ if pdf_file is not None:
 
         # Use cropper to select and crop a part of the image only if the page number changes
         if st.button("Crop Image"):
-            cropped_image = st_cropperjs(image_bytes, btn_text="Crop Image")
+            st.session_state.crop_button_clicked = True
 
-            if cropped_image is not None:
-                try:
-                    # Convert cropped image to PIL Image
-                    pil_image = Image.open(BytesIO(cropped_image))
+    if st.session_state.crop_button_clicked:
+        cropped_image = st_cropperjs(image_bytes, btn_text="Crop Image")
 
-                    # Display the cropped image
-                    st.write("Cropped Image:")
-                    st.image(pil_image, use_column_width=True)
+        if cropped_image is not None:
+            try:
+                # Convert cropped image to PIL Image
+                pil_image = Image.open(BytesIO(cropped_image))
 
-                    # Save the cropped image as a PNG file
-                    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_img_file:
-                        pil_image.save(tmp_img_file.name)
+                # Display the cropped image
+                st.write("Cropped Image:")
+                st.image(pil_image, use_column_width=True)
 
-                        # Read the cropped image back as bytes
-                        with open(tmp_img_file.name, "rb") as img_file:
-                            img_bytes = img_file.read()
+                # Save the cropped image as a PNG file
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_img_file:
+                    pil_image.save(tmp_img_file.name)
 
-                        # Provide download button for the cropped image
-                        st.download_button("Download Cropped Image", img_bytes, file_name="cropped_image.png", mime="image/png")
+                    # Read the cropped image back as bytes
+                    with open(tmp_img_file.name, "rb") as img_file:
+                        img_bytes = img_file.read()
 
-                except Exception as e:
-                    st.error(f"Error: {e}")
+                    # Provide download button for the cropped image
+                    st.download_button("Download Cropped Image", img_bytes, file_name="cropped_image.png", mime="image/png")
+
+            except Exception as e:
+                st.error(f"Error: {e}")
 
     # Clean up the temporary files
     os.unlink(tmp_file_path)
+
 else:
     st.write("Upload a PDF file using the file uploader above.")
