@@ -42,15 +42,17 @@ if pdf_file is not None:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_img_file:
                 pil_image.save(tmp_img_file.name)
 
-            # Read the cropped image back as bytes
-            with open(tmp_img_file.name, "rb") as img_file:
-                img_bytes = img_file.read()
+                # Read the cropped image back as bytes
+                with open(tmp_img_file.name, "rb") as img_file:
+                    img_bytes = img_file.read()
 
-            # Download the cropped image
-            st.download_button("Download Cropped Image", img_bytes, file_name="cropped_image.png", mime="image/png")
+                # Download the cropped image
+                st.download_button("Download Cropped Image", img_bytes, file_name="cropped_image.png", mime="image/png")
 
-    # Clean up the temporary files
+            # Clean up the temporary image file
+            os.unlink(tmp_img_file.name)
+
+    # Clean up the temporary PDF file
     os.unlink(tmp_file_path)
-    os.unlink(tmp_img_file.name)
 else:
     st.write("Upload a PDF file using the file uploader above.")
