@@ -23,7 +23,7 @@ if pdf_file is not None:
         image_bytes = page.get_pixmap().tobytes()
 
         # Display the PDF page
-        st.image(image_bytes, use_column_width=True, format="PNG", caption=f"Page {page_number}")
+        st.image(image_bytes, use_column_width=True, caption=f"Page {page_number}")
 
         # Use cropper to select and crop a part of the image
         cropped_image = st_cropperjs(image_bytes, aspect_ratio=(4, 3))
@@ -31,7 +31,7 @@ if pdf_file is not None:
         # Download the cropped image
         if cropped_image is not None:
             st.write("Cropped Image:")
-            st.image(cropped_image, use_column_width=True, format="PNG")
+            st.image(cropped_image, use_column_width=True)
             st.download_button("Download Cropped Image", cropped_image, file_name="cropped_image.png", mime="image/png")
 
     # Clean up the temporary file
