@@ -159,9 +159,48 @@ if pil_image is not None:
         ocr_data.append((idx + 1, tex))
 
     ocr_df = pd.DataFrame(ocr_data, columns=None)
-    st.dataframe(ocr_data)
+    st.write('Extracted text:')
+    st.dataframe(ocr_data, width = 200)
 
+#---------------------------------------------------------------------------------------------------------
 
+# Define a function to classify text based on aspect ratio
+def classify_text(bounds, threshold=1.5):
+    vertical_text = []
+    horizontal_text = []
+    for bound in bounds:
+        p0, p1, p2, p3 = bound[0]
+        # Calculate width and height of bounding box
+        width = ((p1[0] - p0[0])**2 + (p1[1] - p0[1])**2)**0.5
+        height = ((p3[0] - p0[0])**2 + (p3[1] - p0[1])**2)**0.5
+        # Calculate aspect ratio
+        aspect_ratio = height / width
+        # Classify based on aspect ratio
+        if aspect_ratio > threshold:
+            vertical_text.append(bound)
+        else:
+            horizontal_text.append(bound)
+    return vertical_text, horizontal_text
+
+# Classify text into vertical and horizontal categories
+vertical_text, horizontal_text = classify_text(bounds)
+
+col1, col2 = st.columns(2, gap="small")
+with col1:
+    horiz_text = st.button('Get only Horizontal text')
+
+with col2:
+    vert_text = st.button('Get only Vertical text')
+
+if horiz_text:
+    # Draw bounding boxes for vertical text
+    im_with_horiz_boxes = draw_boxes(pil_image.copy(), horizontal_text, color='green')
+    st.image(im_with_horiz_boxes, use_column_width='never')
+
+if vert_text:
+    # Draw bounding boxes for vertical text
+    im_with_vert_boxes = draw_boxes(pil_image.copy(), vertical_text, color='blue')
+    st.image(im_with_vert_boxes, use_column_width=None)
 
 
 
