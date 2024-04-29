@@ -10,6 +10,8 @@ from PIL import ImageDraw
 import numpy as np
 import easyocr
 import pandas as pd
+import cv2
+import time
 
 fa_css = '''
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
@@ -54,9 +56,13 @@ if pdf_file is not None:
             st.session_state.crop_button_clicked = True
 
     if st.session_state.crop_button_clicked:
+        
         cropped_image = st_cropperjs(image_bytes, btn_text="Crop Image")
 
         if cropped_image is not None:
+            with st.spinner("Loading the cropped image..."):
+                time.sleep(5)
+            st.success("You can extract the text now !")
             try:
                 # Convert cropped image to PIL Image
                 pil_image = Image.open(BytesIO(cropped_image))
@@ -64,7 +70,9 @@ if pdf_file is not None:
                 # Display the cropped image
                 #st.write("Cropped Image:")
                 st.markdown(f'<i class="fa-solid fa-cube" style="margin-right: 10px; font-size: 20px;"></i> <span style="font-size: 24px; color: #3573b3;">**Cropped Image**</span>', unsafe_allow_html=True)
-                st.image(pil_image, use_column_width=True)
+                st.image(pil_image, use_column_width='auto')
+                width, height = pil_image.size
+                st.write("Image Size (Width x Height):", width, "x", height)
 
                 # Save the cropped image as a PNG file
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_img_file:
@@ -92,15 +100,48 @@ else:
 
 if pil_image is not None:
 
+    #st.write("Image Size (Width x Height):", width, "x", height)
+
     def rotate_image(im, angle):
         return im.rotate(angle, expand=True)
     
-    rotated_image = rotate_image(pil_image, -90)
+    
+    image_np = np.array(pil_image)
+
+    # Convert the image to grayscale
+    gray = cv2.cvtColor(image_np, cv2.COLOR_BGR2GRAY)
+    #st.image( gray, caption='grayscale_image', use_column_width='never')
+
+    # Get the dimensions of the grayscale image
+    height, width = gray.shape[:2]
+
+    # Calculate the new width and height by multiplying current dimensions by 2
+    new_width = width * 2
+    new_height = height * 2
+
+    # Resize the grayscale image
+    resized_gray = cv2.resize(gray, (new_width, new_height))
+
+    # Convert NumPy array back to PIL Image
+    Processed_Image = Image.fromarray(resized_gray)
+    st.write('')
+    st.markdown(f'<i class="fa-solid fa-cube" style="margin-right: 10px; font-size: 20px;"></i> <span style="font-size: 24px; color: #3573b3;">**Processed Image**</span>', unsafe_allow_html=True)
+    st.image(Processed_Image, use_column_width='auto')
+
+    n_width, n_height = Processed_Image.size
+    st.write("Image Size (Width x Height):", n_width, "x", n_height)
+
+
+    rotated_image = rotate_image(Processed_Image, -90)
+    st.write('')
+    st.markdown(f'<i class="fa-solid fa-cube" style="margin-right: 10px; font-size: 20px;"></i> <span style="font-size: 24px; color: #3573b3;">**Rotated Image**</span>', unsafe_allow_html=True)
+    st.image(rotated_image, use_column_width='auto')
+
 
 
      # Convert PIL Image to JPEG format
     img_byte_arr = BytesIO()
-    pil_image.save(img_byte_arr, format='PNG')
+    Processed_Image.save(img_byte_arr, format='PNG')
     img_byte_arr = img_byte_arr.getvalue()
 
     # Convert PIL Image to JPEG format
@@ -109,7 +150,6 @@ if pil_image is not None:
     img_byte_arr_ro = img_byte_arr_ro.getvalue()
 
 
-    #st.image(img_bytes, use_column_width=True)
     # Doing OCR. Get bounding boxes.
     bounds = reader.readtext(img_byte_arr)
     rotated_bounds = reader.readtext(img_byte_arr_ro)
@@ -117,90 +157,89 @@ if pil_image is not None:
 
     # Draw bounding boxes
     def draw_boxes(image, bounds, color='red', width=2):
-        draw = ImageDraw.Draw(image)
+        rgb_image = Image.new('RGB', image.size)
+        rgb_image.paste(image)
+        draw = ImageDraw.Draw(rgb_image)
         for bound in bounds:
             p0, p1, p2, p3 = bound[0]
             draw.line([*p0, *p1, *p2, *p3, *p0], fill=color, width=width)
-        return image
-
-    #draw_boxes(im, bounds)
+        return rgb_image
 
     
-    st.write('')
-    st.markdown(f'<i class="fa-solid fa-cube" style="margin-right: 10px; font-size: 20px;"></i> <span style="font-size: 24px; color: #3573b3;">**Rotated Image**</span>', unsafe_allow_html=True)
-    st.image(rotated_image, use_column_width=True)
+
+   
+        
+    extract_text = st.button(label= 'Extract Text')
+    if extract_text:
+        st.markdown(f'<i class="fa-solid fa-cube" style="margin-right: 10px; font-size: 20px;"></i> <span style="font-size: 24px; color: #3573b3;">**OCR**</span>', unsafe_allow_html=True)
+        with st.spinner('Extracting text...'):
+            time.sleep(8)
+
+        image_with_boxes = draw_boxes(Processed_Image.copy(), bounds)
+        rotated_image_with_boxes = draw_boxes(rotated_image.copy(), rotated_bounds)
+        st.write('')
+        st.write('Cropped Image with OCR Bounding_Boxes')
+        st.image(image_with_boxes, use_column_width= 'auto')
+
+        st.write('')
+        st.write('Rotated Image with OCR Bounding_Boxes')
+        st.image(rotated_image_with_boxes, use_column_width= "auto")
 
 
-    #im = PIL.Image.open(pil_image)
 
+        #To get the text from the bounding boxes
+        result = reader.readtext(img_byte_arr)
+        text = [entry[1] for entry in result]
+        
 
-    st.markdown(f'<i class="fa-solid fa-cube" style="margin-right: 10px; font-size: 20px;"></i> <span style="font-size: 24px; color: #3573b3;">**OCR**</span>', unsafe_allow_html=True)
+        
+        ocr_data = []
+        for idx, tex in enumerate(text):
+            ocr_data.append((idx + 1, tex))
 
-    image_with_boxes = draw_boxes(pil_image.copy(), bounds)
-    rotated_image_with_boxes = draw_boxes(rotated_image.copy(), rotated_bounds)
-    st.write('')
-    st.write('Cropped Image with OCR Bounding_Boxes')
-    st.image(image_with_boxes, use_column_width= "never")
-
-    st.write('')
-    st.write('Rotated Image with OCR Bounding_Boxes')
-    st.image(rotated_image_with_boxes, use_column_width= "never")
-
-
-
-    #To get the text from the bounding boxes
-    result = reader.readtext(img_byte_arr)
-    text = [entry[1] for entry in result]
-    
-
-    
-    ocr_data = []
-    for idx, tex in enumerate(text):
-        ocr_data.append((idx + 1, tex))
-
-    ocr_df = pd.DataFrame(ocr_data, columns=None)
-    st.write('Extracted text:')
-    st.dataframe(ocr_data, width = 200)
+        ocr_df = pd.DataFrame(ocr_data, columns=None)
+        st.write('Extracted text:')
+        st.dataframe(ocr_data, width = 200)
 
 #---------------------------------------------------------------------------------------------------------
 
-# Define a function to classify text based on aspect ratio
-def classify_text(bounds, threshold=1.5):
-    vertical_text = []
-    horizontal_text = []
-    for bound in bounds:
-        p0, p1, p2, p3 = bound[0]
-        # Calculate width and height of bounding box
-        width = ((p1[0] - p0[0])**2 + (p1[1] - p0[1])**2)**0.5
-        height = ((p3[0] - p0[0])**2 + (p3[1] - p0[1])**2)**0.5
-        # Calculate aspect ratio
-        aspect_ratio = height / width
-        # Classify based on aspect ratio
-        if aspect_ratio > threshold:
-            vertical_text.append(bound)
-        else:
-            horizontal_text.append(bound)
-    return vertical_text, horizontal_text
+    # Define a function to classify text based on aspect ratio
+    def classify_text(bounds, threshold=1.5):
+        vertical_text = []
+        horizontal_text = []
+        for bound in bounds:
+            p0, p1, p2, p3 = bound[0]
+            # Calculate width and height of bounding box
+            width = ((p1[0] - p0[0])**2 + (p1[1] - p0[1])**2)**0.5
+            height = ((p3[0] - p0[0])**2 + (p3[1] - p0[1])**2)**0.5
+            # Calculate aspect ratio
+            aspect_ratio = height / width
+            # Classify based on aspect ratio
+            if aspect_ratio > threshold:
+                vertical_text.append(bound)
+            else:
+                horizontal_text.append(bound)
+        return vertical_text, horizontal_text
 
-# Classify text into vertical and horizontal categories
-vertical_text, horizontal_text = classify_text(bounds)
+    # Classify text into vertical and horizontal categories
+    vertical_text, horizontal_text = classify_text(bounds)
 
-col1, col2 = st.columns(2, gap="small")
-with col1:
-    horiz_text = st.button('Get only Horizontal text')
+    col1, col2 = st.columns(2, gap="small")
+    with col1:
+        horiz_text = st.button('Get only Horizontal text')
 
-with col2:
-    vert_text = st.button('Get only Vertical text')
+    with col2:
+        vert_text = st.button('Get only Vertical text')
 
-if horiz_text:
-    # Draw bounding boxes for vertical text
-    im_with_horiz_boxes = draw_boxes(pil_image.copy(), horizontal_text, color='green')
-    st.image(im_with_horiz_boxes, use_column_width='never')
+    if horiz_text:
+        # Draw bounding boxes for vertical text
+        im_with_horiz_boxes = draw_boxes(Processed_Image.copy(), horizontal_text, color='green')
+        st.image(im_with_horiz_boxes, use_column_width=None)
 
-if vert_text:
-    # Draw bounding boxes for vertical text
-    im_with_vert_boxes = draw_boxes(pil_image.copy(), vertical_text, color='blue')
-    st.image(im_with_vert_boxes, use_column_width=None)
+    if vert_text:
+        # Draw bounding boxes for vertical text
+        im_with_vert_boxes = draw_boxes(Processed_Image.copy(), vertical_text, color='blue')
+        st.image(im_with_vert_boxes, use_column_width=None)
 
 
 
